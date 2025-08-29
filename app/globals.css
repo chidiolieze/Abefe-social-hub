@@ -43,6 +43,11 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 }
+/* Add to your global CSS file (e.g., app/global.css or styles.css) */
+[class*="v0-watermark"], [class*="built-with-v0"], [id*="v0-badge"], [data-v0-watermark] {
+  display: none !important;
+    visibility: hidden !important;
+    }
 
 :root {
   --background: oklch(1 0 0);
