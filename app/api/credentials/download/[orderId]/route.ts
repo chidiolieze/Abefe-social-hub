@@ -5,14 +5,13 @@ export async function GET(request: NextRequest, { params }: { params: { orderId:
   try {
     const { orderId } = params
 
-    const purchases = await DatabaseService.getUserPurchases("") // We'll get all purchases and filter
-    const purchase = purchases.find((p) => p.id === orderId)
+    const purchase = await DatabaseService.getPurchase(orderId)
 
     if (!purchase) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 })
     }
 
-    const product = await DatabaseService.getProductById(purchase.product_id)
+    const product = await DatabaseService.getProduct(purchase.product_id)
 
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 })
@@ -21,7 +20,7 @@ export async function GET(request: NextRequest, { params }: { params: { orderId:
     let fileContent = `Product: ${product.name}\n\n`
 
     // Check if product has credentials
-    const credentials = (product as any).credentials || {}
+    const credentials = product.credentials || {}
     let hasCredentials = false
 
     if (credentials.username) {

@@ -33,6 +33,7 @@ import { useProducts } from "@/lib/products-context"
 import { useAuth } from "@/lib/auth-context"
 import { categoryMap } from "@/lib/products-data"
 import { TransactionService } from "@/lib/transaction-service"
+import Database from "@/lib/database"
 import { SecurityUtils } from "@/lib/security"
 import Image from "next/image"
 import PaystackService from "@/lib/paystack-service"
@@ -239,46 +240,32 @@ export default function ProductPage({ params }: { params: { category: string; pr
     setPurchaseResult(null)
 
     try {
-      const response = await fetch("/api/manual-payments", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          productId: compatibleProduct.id,
-          productName: compatibleProduct.name,
-          productCategory: compatibleProduct.category,
-          amount: compatibleProduct.price,
-          transactionReference: sanitizedReference.sanitized,
-          proofOfPayment: proofOfPayment,
-        }),
+      // Create manual payment request
+      Database.createManualPaymentRequest({
+        userId: user.id,
+        productId: compatibleProduct.id,
+        productName: compatibleProduct.name,
+        productCategory: compatibleProduct.category,
+        amount: compatibleProduct.price,
+        transactionReference: sanitizedReference.sanitized,
+        proofOfPayment: proofOfPayment,
+        status: "pending",
       })
 
-      const data = await response.json()
+      setPurchaseResult({
+        success: true,
+        message: `Payment submitted successfully! Your payment for ${compatibleProduct.name} is pending admin confirmation. You will be notified once approved.`,
+      })
 
-      if (data.success) {
-        setPurchaseResult({
-          success: true,
-          message: `Payment submitted successfully! Your payment for ${compatibleProduct.name} is pending admin confirmation. You will be notified once approved.`,
-        })
+      setTransactionReference("")
+      setProofOfPayment("")
+      setIsManualPaymentOpen(false)
 
-        setTransactionReference("")
-        setProofOfPayment("")
-        setIsManualPaymentOpen(false)
-
-        // Redirect to dashboard after 3 seconds
-        setTimeout(() => {
-          router.push("/dashboard")
-        }, 3000)
-      } else {
-        setPurchaseResult({
-          success: false,
-          message: data.message || "Failed to submit payment. Please try again.",
-        })
-      }
+      // Redirect to dashboard after 3 seconds
+      setTimeout(() => {
+        router.push("/dashboard")
+      }, 3000)
     } catch (error) {
-      console.error("Error submitting manual payment:", error)
       setPurchaseResult({
         success: false,
         message: "Failed to submit payment. Please try again.",

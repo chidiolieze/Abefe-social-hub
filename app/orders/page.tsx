@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
 import { useAuth } from "@/lib/auth-context"
+import Database from "@/lib/database"
 import { Download, Package, Calendar, CreditCard } from "lucide-react"
 
 export default function OrdersPage() {
@@ -22,25 +23,11 @@ export default function OrdersPage() {
       return
     }
 
-    fetchUserOrders()
+    // Load user's purchases
+    const userPurchases = Database.getUserPurchases(user.id)
+    setPurchases(userPurchases)
+    setLoading(false)
   }, [user, router])
-
-  const fetchUserOrders = async () => {
-    try {
-      const response = await fetch(`/api/user/orders?userId=${user?.id}`)
-      const data = await response.json()
-
-      if (data.success) {
-        setPurchases(data.purchases)
-      } else {
-        console.error("Failed to fetch orders:", data.message)
-      }
-    } catch (error) {
-      console.error("Error fetching orders:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleDownloadCredentials = async (orderId: string) => {
     try {
@@ -109,10 +96,10 @@ export default function OrdersPage() {
                 <Card key={purchase.id} className="hover:shadow-lg transition-shadow">
                   <CardHeader>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <CardTitle className="text-lg">{purchase.product_name}</CardTitle>
+                      <CardTitle className="text-lg">{purchase.productName}</CardTitle>
                       <Badge
                         variant={
-                          purchase.status === "completed"
+                          purchase.status === "active"
                             ? "default"
                             : purchase.status === "expired"
                               ? "destructive"
@@ -136,10 +123,19 @@ export default function OrdersPage() {
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <div>
                           <p className="text-sm text-muted-foreground">Purchase Date</p>
-                          <p className="font-semibold">{new Date(purchase.created_at).toLocaleDateString()}</p>
+                          <p className="font-semibold">{new Date(purchase.purchaseDate).toLocaleDateString()}</p>
                         </div>
                       </div>
-                      {purchase.status === "completed" && (
+                      {purchase.expiryDate && (
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-muted-foreground" />
+                          <div>
+                            <p className="text-sm text-muted-foreground">Expires</p>
+                            <p className="font-semibold">{new Date(purchase.expiryDate).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                      )}
+                      {purchase.credentialId && (
                         <div className="flex items-center gap-2">
                           <Package className="h-4 w-4 text-green-600" />
                           <div>
@@ -150,7 +146,7 @@ export default function OrdersPage() {
                       )}
                     </div>
 
-                    {purchase.status === "completed" && (
+                    {purchase.credentialId && (
                       <div className="flex justify-end">
                         <Button
                           onClick={() => handleDownloadCredentials(purchase.id)}

@@ -9,12 +9,12 @@ import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
 import { Wallet, CreditCard, ShoppingCart, Ticket, DollarSign } from "lucide-react"
 import Link from "next/link"
+import Database from "@/lib/database"
 
 export default function DashboardPage() {
   const { user, isLoading } = useAuth()
   const router = useRouter()
   const [userStats, setUserStats] = useState<any>(null)
-  const [statsLoading, setStatsLoading] = useState(true)
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -24,31 +24,12 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (user) {
-      fetchUserStats()
+      const stats = Database.getUserStats(user.id)
+      setUserStats(stats)
     }
   }, [user])
 
-  const fetchUserStats = async () => {
-    if (!user) return
-
-    try {
-      setStatsLoading(true)
-      const response = await fetch(`/api/user/stats?userId=${user.id}`)
-      const data = await response.json()
-
-      if (data.success) {
-        setUserStats(data.stats)
-      } else {
-        console.error("Failed to fetch user stats:", data.message)
-      }
-    } catch (error) {
-      console.error("Error fetching user stats:", error)
-    } finally {
-      setStatsLoading(false)
-    }
-  }
-
-  if (isLoading || statsLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">

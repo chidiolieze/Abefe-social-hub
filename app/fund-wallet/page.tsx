@@ -13,6 +13,7 @@ import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
 import { Wallet, CreditCard, ArrowLeft, Building2, Copy, Loader2 } from "lucide-react"
 import Link from "next/link"
+import Database from "@/lib/database"
 import PaystackService from "@/lib/paystack-service"
 
 declare global {
@@ -137,37 +138,25 @@ export default function FundWalletPage() {
       setMessage("")
 
       try {
-        const response = await fetch("/api/funding-requests", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            userId: user.id,
-            amount: fundAmount,
-            transactionReference: transactionReference.trim(),
-            proofOfPayment: proofOfPayment,
-          }),
+        Database.createFundingRequest({
+          userId: user.id,
+          amount: fundAmount,
+          transactionReference: transactionReference.trim(),
+          proofOfPayment: proofOfPayment,
+          status: "pending",
         })
 
-        const data = await response.json()
+        setMessage(
+          `Funding request submitted successfully! Your request for ${PaystackService.formatCurrency(fundAmount)} is pending admin confirmation.`,
+        )
+        setAmount("")
+        setTransactionReference("")
+        setProofOfPayment("")
 
-        if (data.success) {
-          setMessage(
-            `Funding request submitted successfully! Your request for ${PaystackService.formatCurrency(fundAmount)} is pending admin confirmation.`,
-          )
-          setAmount("")
-          setTransactionReference("")
-          setProofOfPayment("")
-
-          setTimeout(() => {
-            router.push("/dashboard")
-          }, 3000)
-        } else {
-          setMessage(data.message || "Failed to submit funding request. Please try again.")
-        }
+        setTimeout(() => {
+          router.push("/dashboard")
+        }, 3000)
       } catch (error) {
-        console.error("Error submitting funding request:", error)
         setMessage("Failed to submit funding request. Please try again.")
       } finally {
         setIsLoading(false)
